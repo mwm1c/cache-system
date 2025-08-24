@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 #include "CachePolicy.h"
 
 namespace mwm1cCache
@@ -226,5 +227,47 @@ namespace mwm1cCache
         std::unique_ptr<LruCache<Key, size_t>> historyList_;
         // Data values that have not reached k accesses
         std::unordered_map<Key, Value> historyValueMap_;
+    };
+
+    // version 3
+    template <typename Key, typename Value>
+    class HashLruCaches
+    {
+    public:
+        HashLruCaches(size_t cap, int sliceNum)
+            : capacity_(cap), sliceNum_(sliceNum > 0 ? sliceNum : std::thread::hardware_concurrency())
+        {
+            size_t sliceSize = std::ceil(cap / static_cast<double>(sliceNum_));
+            for (int i = 0; i < sliceNum; ++i)
+            {
+                lruSliceCaches.emplace_back(new LruCache<Key, Value>(sliceNum_));
+            }
+        }
+        void put(Key key, Value value)
+        {
+            size_t sliceIndex = Hash(key) % sliceNum_;
+            lruSliceCaches[sliceIndex]->put(key, value);
+        }
+        bool get(Key key, value &value)
+        {
+            size_t sliceIndex = Hash(key) % sliceNum_;
+            return lruSliceCaches[sliceIndex]->get(key, value);
+        }
+        Value get(Key key)
+        {
+            Value value{};
+            get(key, value);
+            return value;
+        }
+
+    private:
+        size_t Hash(Key key)
+        {
+            std::hash<Key> hashFunc;
+            return hashFunc(key);
+        }
+        size_t capacity_;
+        int sliceNum_;
+        std::vector<std::unique_ptr<LruCache<Key, Value>>> lruSliceCaches;
     };
 }
