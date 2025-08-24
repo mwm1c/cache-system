@@ -159,5 +159,72 @@ namespace mwm1cCache
     template <typename Key, typename Value>
     class LruKCache : public LruCache<Key, Value>
     {
+    public:
+        LruKCache(int cap, int historyCap, int k)
+            : LruCache<Key, Value>(cap), historyList_(std::make_unique<LruCache<Key, size_t>>(historyCap)), k_(k) {}
+        Value get(Key key)
+        {
+            Value value{};
+            bool inMainCache = LruCache<Key, Value>::get(key, value);
+            // fetch and update access history count
+            size_t historyCount = historyList_->get(key);
+            ++historyCount;
+            historyList_->put(key, historyCount);
+            // return directly if data in main-cache
+            if (inMainCache)
+            {
+                return value;
+            }
+            // if data isn't in main-cache, but access reach to k
+            if (historyCount >= k_)
+            {
+                auto it = historyValueMap_.find(key);
+                if (it != historyValueMap_.end())
+                {
+                    // have history record, move it to main-cache
+                    Value storedValue = it->second;
+                    // remove item from history record
+                    historyList_->remove(key);
+                    historyValueMap_.erase(it);
+                    // move to main-cache
+                    LruCache<Key, Value>::put(key, storedValue);
+                    return storedValue;
+                }
+                // dont have history record, return default value;
+            }
+            return value;
+        }
+        void put(Key key, Value value)
+        {
+            // check out if value in main-cache
+            Value existingValue{};
+            bool inMainCache = LruCache<Key, Value>::get(key, existingValue);
+            if (inMainCache)
+            {
+                LruCache<Key, Value>::put(key, value);
+                return;
+            }
+            // fetch and update history record
+            size_t historyCount = historyList_->get(key);
+            ++historyCount;
+            historyList_->put(key, historyCount);
+            // save key:value to history record map
+            historyValueMap_[key] = value;
+            // check if history record item reach to k
+            if (historyCount >= k_)
+            {
+                historyList_->remove(key);
+                historyValueMap_.erase(key);
+                LruCache<Key, Value>::put(key, value);
+            }
+        }
+
+    private:
+        // criteria for entering the cache queue
+        int k_;
+        // Access Data History (value represents the number of visits)
+        std::unique_ptr<LruCache<Key, size_t>> historyList_;
+        // Data values that have not reached k accesses
+        std::unordered_map<Key, Value> historyValueMap_;
     };
 }
