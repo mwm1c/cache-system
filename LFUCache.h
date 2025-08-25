@@ -270,4 +270,54 @@ namespace mwm1cCache
         NodeMap nodeMap_;
         std::unordered_map<int, FreqList<Key, Value> *> freqToFreqList_;
     };
+
+    template <typename Key, typename Value>
+    class HashLfuCache
+    {
+    public:
+        HashLfuCache(size_t cap, int sliceNum, int maxAvgNum = 10)
+            : capacity_(cap), sliceNum_(sliceNum > 0 ? sliceNum : std::thread::hardware_concurrency())
+        {
+            size_t sliceSize = std::ceil(cap / static_cast<double>(sliceNum_));
+            for (int i = 0; i < sliceNum; ++ i)
+            {
+                lfuSliceCaches_.emplace_back(new LfuCache<Key, Value>(sliceSize, maxAvgNum));
+            }
+        }
+        void put(Key key, Value value)
+        {
+            size_t sliceIndex = Hash(key) % sliceNum_;
+            lfuSliceCaches_[sliceIndex]->put(key, value);
+        }
+        bool get(Key key, Value &value)
+        {
+            size_t sliceIndex = Hash(key) % sliceNum_;
+            return lfuSliceCaches_[sliceIndex]->get(key, value);
+        }
+        Value get(Key key)
+        {
+            Value value{};
+            get(key, value);
+            return value;
+        }
+        void purge()
+        {
+            for (auto &lfuSliceCache : lfuSliceCaches_)
+            {
+                lfuSliceCache->purge();
+            }
+        }
+
+    private:
+        size_t Hash(Key key)
+        {
+            std::hash<Key> hashFunc;
+            return hashFunc(key);
+        }
+
+    private:
+        size_t capacity_;
+        int sliceNum_;
+        std::vector<std::unique_ptr<LfuCache<Key, Value>>> lfuSliceCaches_;
+    };
 }
