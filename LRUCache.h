@@ -127,7 +127,7 @@ namespace mwm1cCache
         }
         void removeNode(NodePtr node)
         {
-            if (!node->prev.expired() && node->next_)
+            if (!node->prev_.expired() && node->next_)
             {
                 auto prev = node->prev_.lock();
                 prev->next_ = node->next_;
@@ -140,7 +140,7 @@ namespace mwm1cCache
         {
             node->next_ = dummyTail_;
             node->prev_ = dummyTail_->prev_;
-            dummyTail_->prev_.lock()->next = node;
+            dummyTail_->prev_.lock()->next_ = node;
             dummyTail_->prev_ = node;
         }
         void evictLeastRecent()
