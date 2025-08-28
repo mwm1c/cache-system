@@ -43,7 +43,7 @@ namespace mwm1cCache
         {
             std::lock_guard<std::mutex> lock(mutex_);
             auto it = mainCache_.find(key);
-            if (it == mainCache_.end())
+            if (it != mainCache_.end())
             {
                 shouldTransform = updateNodeAccess(it->second);
                 value = it->second->getValue();

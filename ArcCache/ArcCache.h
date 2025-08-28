@@ -12,7 +12,8 @@ namespace mwm1cCache
     {
     public:
         explicit ArcCache(size_t cap = 10, size_t transformThreshold = 2)
-            : capacity_(cap), transformThreshold_(transformThreshold)
+            : capacity_(cap), transformThreshold_(transformThreshold), lruPart_(std::make_unique<ArcLruPart<Key, Value>>(cap, transformThreshold)),
+              lfuPart_(std::make_unique<ArcLfuPart<Key, Value>>(cap, transformThreshold))
         {
         }
 

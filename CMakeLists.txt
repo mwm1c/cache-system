@@ -12,4 +12,4 @@ add_executable(main ${SOURCES})
 
 set_target_properties(main PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
-# target_compile_options(main PRIVATE -Wall -Wextra -O2)
+target_compile_options(main PRIVATE -Wall -Wextra -O0 -g)

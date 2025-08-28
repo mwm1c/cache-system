@@ -116,7 +116,7 @@ namespace mwm1cCache
             dummyHead_ = std::make_shared<LruNodeType>(Key(), Value());
             dummyTail_ = std::make_shared<LruNodeType>(Key(), Value());
             dummyHead_->next_ = dummyTail_;
-            dummyTail_->next_ = dummyHead_;
+            dummyTail_->prev_ = dummyHead_;
         }
         void updateExistingNode(NodePtr node, const Value &value)
         {
