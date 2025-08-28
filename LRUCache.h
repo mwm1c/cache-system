@@ -25,14 +25,28 @@ namespace mwm1cCache
 
     public:
         LruNode(Key key, Value value)
-            : key_(key), value_(value), accessCount(1)
+            : key_(key), value_(value), accessCount_(1)
         {
         }
-        Key getKey() const { return key_ };
-        Value getValue() const { return value_ };
-        void setValue(const Value &value) { value_ = value };
-        size_t getAccessCount() const { return accessCount_ };
-        void incrementAccessCount() { ++accessCount_ };
+        Key getKey() const
+        {
+            return key_;
+        }
+        Value getValue() const
+        {
+            return value_;
+        }
+        void setValue(const Value &value)
+        {
+            value_ = value;
+        }
+        size_t getAccessCount() const
+        {
+            return accessCount_;
+        }
+        void incrementAccessCount() {
+            ++accessCount_;
+        }
 
         friend class LruCache<Key, Value>;
     };
@@ -43,7 +57,7 @@ namespace mwm1cCache
     {
     public:
         using LruNodeType = LruNode<Key, Value>;
-        using NodePtr = std::shared<LruNodeType>; // be careful
+        using NodePtr = std::shared_ptr<LruNodeType>;   // be careful
         using NodeMap = std::unordered_map<Key, NodePtr>;
         LruCache(int cap) : capacity_(cap)
         {
@@ -69,9 +83,9 @@ namespace mwm1cCache
         }
         bool get(Key key, Value &value) override
         {
-            std::lock_guard(mutex_);
+            std::lock_guard<std::mutex> lock(mutex_);
             auto it = nodeMap_.find(key);
-            if (it != nodeMap.end())
+            if (it != nodeMap_.end())
             {
                 moveToMostRecent(it->second);
                 value = it->second->getValue();
@@ -97,12 +111,12 @@ namespace mwm1cCache
         }
 
     private:
-        void initialize()
+        void initializeList()
         {
             dummyHead_ = std::make_shared<LruNodeType>(Key(), Value());
             dummyTail_ = std::make_shared<LruNodeType>(Key(), Value());
-            dummyHead_->next = dummyTail_;
-            dummyTail_->next = dummyHead_;
+            dummyHead_->next_ = dummyTail_;
+            dummyTail_->next_ = dummyHead_;
         }
         void updateExistingNode(NodePtr node, const Value &value)
         {
@@ -248,7 +262,7 @@ namespace mwm1cCache
             size_t sliceIndex = Hash(key) % sliceNum_;
             lruSliceCaches[sliceIndex]->put(key, value);
         }
-        bool get(Key key, value &value)
+        bool get(Key key, Value &value)
         {
             size_t sliceIndex = Hash(key) % sliceNum_;
             return lruSliceCaches[sliceIndex]->get(key, value);

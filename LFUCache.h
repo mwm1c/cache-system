@@ -71,6 +71,7 @@ namespace mwm1cCache
         {
             return head_->next;
         }
+        friend class LfuCache<Key, Value>;
     };
 
     template <typename Key, typename Value>
@@ -83,7 +84,7 @@ namespace mwm1cCache
 
         LfuCache(int cap, int maxAvgNum = 1000000)
             : capacity_(cap), minFreq_(INT8_MAX),
-              , maxAvgNum_(maxAvgNum), curAvgNum_(0), curTotalNum_(0)
+              maxAvgNum_(maxAvgNum), curAvgNum_(0), curTotalNum_(0)
         {
         }
         ~LfuCache() override = default;
@@ -105,7 +106,7 @@ namespace mwm1cCache
         {
             std::lock_guard<std::mutex> lock(mutex_);
             auto it = nodeMap_.find(key);
-            if (it != nodeMap.end())
+            if (it != nodeMap_.end())
             {
                 getInternal(it->second, value);
                 return true;
@@ -121,7 +122,7 @@ namespace mwm1cCache
         void purge()
         {
             nodeMap_.clear();
-            for (auto& pair: freqToFreqList_)
+            for (auto &pair : freqToFreqList_)
             {
                 delete pair.second;
             }
